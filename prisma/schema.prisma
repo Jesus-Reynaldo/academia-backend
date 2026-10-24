@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum EstadoEstudiante {
+  ACTIVO
+  INACTIVO
+  EGRESADO
+  RETIRADO
+}
+
+enum EstadoCurso {
+  ACTIVO
+  INACTIVO
+}
+
+enum EstadoMateria {
+  ACTIVA
+  INACTIVA
+}
+
+enum EstadoDocente {
+  ACTIVO
+  INACTIVO
+}
+
+enum EstadoPeriodo {
+  PLANIFICADO
+  ACTIVO
+  FINALIZADO
+}
+
+enum EstadoInscripcion {
+  ACTIVA
+  RETIRADA
+  FINALIZADA
+}
+
+enum TipoEvaluacion {
+  PARCIAL
+  FINAL
+  PRACTICA
+  TAREA
+  PROYECTO
+  PARTICIPACION
+  OTRA
+}
+
+model Estudiante {
+  id              Int              @id @default(autoincrement())
+  codigo          String           @unique
+  nombres         String
+  apellidos       String
+  documento       String           @unique
+  email           String?
+  telefono        String?
+  fechaNacimiento DateTime?
+  estado          EstadoEstudiante @default(ACTIVO)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  inscripciones Inscripcion[]
+
+  @@map("estudiantes")
+}
+
+model Docente {
+  id         Int           @id @default(autoincrement())
+  codigo     String        @unique
+  nombres    String
+  apellidos  String
+  email      String?
+  telefono   String?
+  estado     EstadoDocente @default(ACTIVO)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  calificaciones Calificacion[]
+
+  @@map("docentes")
+}
+
+model Curso {
+  id        Int         @id @default(autoincrement())
+  nombre    String
+  nivel     String
+  paralelo  String?
+  capacidad Int?
+  estado    EstadoCurso @default(ACTIVO)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  inscripciones Inscripcion[]
+
+  @@map("cursos")
+}
+
+model Materia {
+  id             Int           @id @default(autoincrement())
+  codigo         String        @unique
+  nombre         String
+  descripcion    String?
+  horasSemanales Int?
+  estado         EstadoMateria @default(ACTIVA)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  calificaciones Calificacion[]
+
+  @@map("materias")
+}
+
+model PeriodoAcademico {
+  id          Int           @id @default(autoincrement())
+  nombre      String
+  fechaInicio DateTime
+  fechaFin    DateTime
+  estado      EstadoPeriodo @default(PLANIFICADO)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  inscripciones Inscripcion[]
+
+  @@map("periodos_academicos")
+}
+
+model Inscripcion {
+  id                 Int               @id @default(autoincrement())
+  estudianteId       Int
+  cursoId            Int
+  periodoAcademicoId Int
+  fechaInscripcion   DateTime          @default(now())
+  estado             EstadoInscripcion @default(ACTIVA)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  estudiante       Estudiante       @relation(fields: [estudianteId], references: [id])
+  curso            Curso            @relation(fields: [cursoId], references: [id])
+  periodoAcademico PeriodoAcademico @relation(fields: [periodoAcademicoId], references: [id])
+  calificaciones   Calificacion[]
+
+  @@unique([estudianteId, cursoId, periodoAcademicoId])
+  @@map("inscripciones")
+}
+
+model Calificacion {
+  id            Int            @id @default(autoincrement())
+  inscripcionId Int
+  materiaId     Int
+  docenteId     Int?
+  nota          Float
+  tipo          TipoEvaluacion
+  fecha         DateTime       @default(now())
+  observacion   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  inscripcion Inscripcion @relation(fields: [inscripcionId], references: [id])
+  materia     Materia     @relation(fields: [materiaId], references: [id])
+  docente     Docente?    @relation(fields: [docenteId], references: [id])
+
+  @@map("calificaciones")
+}
