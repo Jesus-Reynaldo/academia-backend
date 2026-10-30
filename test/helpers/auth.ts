@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { RolUsuario } from '@prisma/client';
@@ -5,7 +6,10 @@ import request from 'supertest';
 import { hashPassword } from '../../src/auth/password.util.js';
 import type { PrismaService } from '../../src/prisma/prisma.service.js';
 
-export const TEST_PASSWORD = 'Password-123';
+// Generated per run so no password literal lives in the repository.
+export const randomPassword = () => randomBytes(12).toString('base64url');
+
+export const TEST_PASSWORD = randomPassword();
 
 let counter = 0;
 

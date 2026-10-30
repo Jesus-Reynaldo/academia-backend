@@ -1,118 +1,240 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# backend-notas — API del Sistema Académico
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API REST para la gestión académica: estudiantes, docentes, cursos, materias, períodos, inscripciones y calificaciones. Incluye login con JWT, tres roles (administrador, docente y estudiante) y endpoints de datos para un dashboard.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+**Tecnologías:** NestJS 12, TypeScript, Prisma 7, MySQL 8, Swagger y Vitest.
 
-## Description
+Este repositorio es **solo la API**. La interfaz (React) se hace en un proyecto aparte que consume esta API.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+---
 
-## Project setup
+## 1. Requisitos previos
 
-```bash
-$ npm install
-```
+| Herramienta | Versión | Comprobar con |
+|---|---|---|
+| Node.js | 22 o superior | `node -v` |
+| npm | viene con Node | `npm -v` |
+| Git | cualquiera reciente | `git --version` |
+| MySQL Server | 8.x (también sirve MariaDB 10.6+) | ver sección 2 |
+| MySQL Workbench (opcional) | 8.x | para ver las tablas con interfaz gráfica |
 
-## Compile and run the project
+---
 
-```bash
-# development
-$ npm run start
+## 2. Instalar y preparar MySQL en tu computadora
 
-# watch mode
-$ npm run start:dev
+Elige **una** de las tres opciones. Al terminar, tendrás un servidor MySQL en `localhost:3306` y dos bases de datos vacías: `academia` (para desarrollar) y `academia_test` (para las pruebas automáticas).
 
-# production mode
-$ npm run start:prod
-```
+> MySQL Workbench es solo un **cliente gráfico**: no incluye el servidor. Si solo instalaste Workbench, todavía te falta una de estas opciones.
 
-## Run tests
+### Opción A — Instalador oficial de MySQL (recomendada)
+
+1. Descarga **MySQL Installer** desde <https://dev.mysql.com/downloads/installer/> (versión *web community* o *full*).
+2. Ejecútalo y elige **Custom** o **Server only**. Selecciona *MySQL Server 8.x* (y *MySQL Workbench* si lo quieres).
+3. En la configuración del servidor:
+   - *Config Type*: **Development Computer**.
+   - Puerto: **3306**.
+   - *Authentication Method*: usa el que viene recomendado (*Strong Password Encryption*).
+   - Define la contraseña del usuario `root` y **anótala**: la usarás en el `.env`.
+   - Deja marcado *Configure MySQL Server as a Windows Service* con inicio automático.
+4. Termina el asistente. Comprueba en `services.msc` que el servicio `MySQL80` esté **En ejecución**.
+
+### Opción B — Docker
+
+Si ya tienes Docker Desktop:
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+docker run --name mysql-academia -e MYSQL_ROOT_PASSWORD=cambia_esta_clave -p 3306:3306 -d mysql:8.4
 ```
 
-## Deployment
+Para iniciarlo o detenerlo después: `docker start mysql-academia` / `docker stop mysql-academia`.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### Opción C — Sin permisos de administrador (zip portable)
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Útil en computadoras de laboratorio donde no puedes instalar programas.
+
+1. Descarga el **ZIP de MySQL Community Server para Windows (x86, 64-bit)** desde <https://dev.mysql.com/downloads/mysql/> y descomprímelo, por ejemplo en `C:\Users\TU_USUARIO\mysql`.
+2. Dentro de esa carpeta crea el archivo `my.ini` (cambia la ruta por la tuya y usa `/` en lugar de `\`):
+   ```ini
+   [mysqld]
+   basedir=C:/Users/TU_USUARIO/mysql
+   datadir=C:/Users/TU_USUARIO/mysql-data
+   port=3306
+   bind-address=127.0.0.1
+   ```
+3. Inicializa la base (una sola vez). Esto deja a `root` **sin contraseña**:
+   ```bash
+   bin\mysqld --defaults-file=my.ini --initialize-insecure --console
+   ```
+4. Arranca el servidor y **deja esa ventana abierta** mientras trabajas:
+   ```bash
+   bin\mysqld --defaults-file=my.ini --console
+   ```
+
+### Crear las bases de datos
+
+Con el servidor en marcha, abre una consola de SQL (MySQL Workbench → conexión `localhost:3306` con usuario `root`, o el cliente `mysql`) y ejecuta:
+
+```sql
+CREATE DATABASE academia;
+CREATE DATABASE academia_test;
+```
+
+**Crear la conexión en Workbench:** en la pantalla de inicio pulsa **+** junto a *MySQL Connections* → *Connection Name*: `academia` → *Hostname*: `localhost` → *Port*: `3306` → *Username*: `root` → **Test Connection** (te pedirá la contraseña) → OK.
+
+---
+
+## 3. Configurar el proyecto
+
+### 3.1 Clonar e instalar dependencias
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+git clone https://github.com/Jesus-Reynaldo/academia-backend.git
+cd academia-backend
+npm install
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 3.2 Crear el archivo `.env`
 
-## Observability
+Copia la plantilla:
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+```bash
+cp .env.example .env        # en PowerShell: Copy-Item .env.example .env
+```
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+Edita `.env` y completa:
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+```env
+DATABASE_URL="mysql://root:TU_CLAVE@localhost:3306/academia"
+PORT=3000
 
-This project is already instrumented. Create a free account at [observe.nestjs.com](https://observe.nestjs.com), add an application, and paste the generated app key and secret into the `ObserveModule.forRoot()` call in `src/app.module.ts`.
+JWT_SECRET="un-texto-largo-y-aleatorio"
+JWT_EXPIRES_IN_SECONDS=3600
+NOTA_APROBACION=51
+```
 
-The free plan needs no payment details and covers 300,000 events a month. You can also browse the [live demo](https://www.observe-demo.nestjs.com/dashboard) first - the whole dashboard over a busy service's data, with nothing to install.
+- **`DATABASE_URL`**: formato `mysql://usuario:contraseña@servidor:puerto/base`. Si tu `root` **no tiene contraseña** (opción C), deja el espacio vacío: `mysql://root:@localhost:3306/academia`. Si la contraseña tiene símbolos como `@`, `#`, `/` o `:`, escríbelos codificados (`@` → `%40`, `#` → `%23`, `/` → `%2F`, `:` → `%3A`).
+- **`JWT_SECRET`**: es obligatorio; sin él la aplicación no arranca. Genera uno así y pégalo entre las comillas:
+  ```bash
+  node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+  ```
+- **`SEED_ADMIN_PASSWORD`** (opcional): contraseña de las cuentas de ejemplo. Si la dejas vacía, el seed genera una aleatoria y te la muestra en consola.
 
-## Resources
+> `.env` contiene secretos y **nunca debe subirse a GitHub** (ya está en `.gitignore`).
 
-Check out a few resources that may come in handy when working with NestJS:
+### 3.3 Crear las tablas y cargar datos de ejemplo
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observe](https://observe.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```bash
+npx prisma generate        # genera el cliente de Prisma
+npx prisma migrate deploy  # crea las tablas en la base `academia`
+npm run prisma:seed        # carga datos de ejemplo y las cuentas de prueba
+```
 
-## Support
+> `prisma:seed` **borra todos los datos** de la base antes de insertar los de ejemplo. Úsalo solo en tu base de desarrollo.
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Al terminar, el seed imprime las cuentas creadas. Si no definiste `SEED_ADMIN_PASSWORD`, **copia la contraseña que muestra en consola**: no se vuelve a mostrar (si la pierdes, vuelve a ejecutar el seed).
 
-## Stay in touch
+| Rol | Correo |
+|---|---|
+| Administrador | `admin@colegio.edu` |
+| Docente | `ana.garcia@colegio.edu` |
+| Estudiante | `juan.perez@colegio.edu` |
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Las tres cuentas comparten la misma contraseña.
 
-## License
+---
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## 4. Levantar el servidor
+
+```bash
+npm run start:dev
+```
+
+Deja la terminal abierta (el servidor se reinicia solo al guardar cambios). Cuando veas `Nest application successfully started`:
+
+| Qué | Dirección |
+|---|---|
+| Prueba rápida (debe responder `Hello World!`) | <http://localhost:3000/api/v1> |
+| Documentación interactiva (Swagger) | <http://localhost:3000/api/docs> |
+
+Para usar otro puerto: cambia `PORT` en el `.env`.
+
+> Al arrancar pueden aparecer mensajes de error `ObserveAgentWorker`. Son de una herramienta de monitoreo que no está configurada; **no afectan** al funcionamiento y puedes ignorarlos.
+
+### Probar el login en Swagger
+
+1. Abre <http://localhost:3000/api/docs> → **Auth** → `POST /api/v1/auth/login` → **Try it out**.
+2. Escribe el cuerpo con una de las cuentas de la sección 3.3:
+   ```json
+   { "email": "admin@colegio.edu", "password": "LA_CONTRASEÑA_DEL_SEED" }
+   ```
+3. Pulsa **Execute**: la respuesta trae un `accessToken`. Cópialo (sin comillas).
+4. Pulsa **Authorize** (arriba a la derecha), pega el token y confirma. El candado queda cerrado.
+5. Ahora prueba cualquier endpoint, por ejemplo `GET /api/v1/dashboard/resumen`.
+
+El token dura 1 hora. Si Swagger responde `401`, vuelve a iniciar sesión.
+
+### Qué puede hacer cada rol
+
+- **Administrador:** todo.
+- **Docente:** consultar catálogos, ver estudiantes y registrar o editar **sus propias** calificaciones.
+- **Estudiante:** ver **solo sus propios** datos, inscripciones, calificaciones e historial académico.
+
+Si un rol intenta algo que no le corresponde, la API responde `403`; sin token responde `401`.
+
+### Conectar tu frontend (React)
+
+- Usa como base `http://localhost:3000/api/v1` y envía el token en cada petición: `Authorization: Bearer <accessToken>`.
+- La API solo acepta peticiones desde `localhost`, `127.0.0.1` o `[::1]` (por ejemplo, `http://localhost:5173`). Si abres tu frontend con otro nombre o desde otra computadora, el navegador bloqueará las llamadas (error de CORS).
+
+---
+
+## 5. Pruebas automáticas
+
+```bash
+npm test            # pruebas unitarias (no necesitan base de datos)
+npm run test:e2e    # pruebas de extremo a extremo (usan MySQL)
+```
+
+Para las pruebas e2e necesitas un archivo `.env.test` con una base **distinta** a la de desarrollo:
+
+```env
+DATABASE_URL="mysql://root:TU_CLAVE@localhost:3306/academia_test"
+JWT_SECRET="cualquier-texto-largo-para-pruebas"
+```
+
+> ⚠️ Cada ejecución de `test:e2e` **borra y recrea** la base indicada en `.env.test`. Nunca apuntes `.env.test` a `academia` ni a una base con datos que quieras conservar.
+
+Otros comandos útiles: `npm run lint` (revisar el código) y `npm run build` (compilar).
+
+---
+
+## 6. Problemas frecuentes
+
+| Síntoma | Causa y solución |
+|---|---|
+| `ECONNREFUSED 127.0.0.1:3306` o `P1001: Can't reach database server` | MySQL no está en marcha. Inicia el servicio `MySQL80` (`services.msc`), el contenedor de Docker o la ventana de `mysqld` (opción C). |
+| `Access denied for user 'root'` | La contraseña del `DATABASE_URL` no coincide con la de MySQL, o tiene símbolos sin codificar (ver 3.2). |
+| `Unknown database 'academia'` | Falta ejecutar `CREATE DATABASE academia;` (ver sección 2). |
+| `JWT_SECRET no está definido` | Falta la variable en el `.env` (ver 3.2). |
+| `EADDRINUSE: address already in use :::3000` | El puerto 3000 está ocupado. Cierra el otro programa o cambia `PORT` en el `.env`. |
+| `Cannot find module '.prisma/client'` o errores de tipos con Prisma | Ejecuta `npx prisma generate`. |
+| `401 Unauthorized` en Swagger | Falta el token o venció. Inicia sesión de nuevo y vuelve a pulsar **Authorize**. |
+| `429 Too Many Requests` en el login | Máximo 10 intentos por minuto. Espera un momento. |
+| Error de CORS en el navegador | Abre tu frontend desde `http://localhost:PUERTO` (ver sección 4). |
+
+---
+
+## 7. Estructura del proyecto
+
+```
+prisma/          esquema, migraciones y seed
+src/
+  auth/          login, JWT y guards de roles
+  usuario/       gestión de cuentas (solo administrador)
+  dashboard/     endpoints de datos agregados para el dashboard
+  estudiante/ docente/ curso/ materia/ periodo-academico/ inscripcion/ calificacion/
+  common/        paginación y utilidades compartidas
+test/            pruebas e2e
+```
+
+Cada módulo tiene su controlador, servicio y DTOs. La especificación funcional completa está en `doc/requirements.md`.

@@ -1,23 +1,26 @@
+import { randomBytes } from 'node:crypto';
 import { hashPassword, verifyPassword } from './password.util.js';
+
+const PASSWORD = randomBytes(12).toString('base64url');
 
 describe('password.util', () => {
   it('verifies the password that was hashed', async () => {
-    const hash = await hashPassword('Password-123');
+    const hash = await hashPassword(PASSWORD);
 
-    expect(await verifyPassword('Password-123', hash)).toBe(true);
+    expect(await verifyPassword(PASSWORD, hash)).toBe(true);
   });
 
   it('rejects a different password', async () => {
-    const hash = await hashPassword('Password-123');
+    const hash = await hashPassword(PASSWORD);
 
-    expect(await verifyPassword('password-123', hash)).toBe(false);
+    expect(await verifyPassword(`${PASSWORD}x`, hash)).toBe(false);
   });
 
   it('never stores the plain password and salts every hash', async () => {
-    const first = await hashPassword('Password-123');
-    const second = await hashPassword('Password-123');
+    const first = await hashPassword(PASSWORD);
+    const second = await hashPassword(PASSWORD);
 
-    expect(first).not.toContain('Password-123');
+    expect(first).not.toContain(PASSWORD);
     expect(first).not.toBe(second);
   });
 
