@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -25,7 +26,7 @@ export class AuthService {
       where: { email: dto.email.toLowerCase() },
     });
 
-    this.dummyHash ??= hashPassword('dummy-password');
+    this.dummyHash ??= hashPassword(randomBytes(16).toString('hex'));
     const hash = usuario?.passwordHash ?? (await this.dummyHash);
     const valid = await verifyPassword(dto.password, hash);
 

@@ -3,8 +3,17 @@ import request from 'supertest';
 import type { App } from 'supertest/types';
 import { createTestApp } from './helpers/create-test-app.js';
 import { cleanDatabase } from './helpers/clean-db.js';
-import { adminAgent, agentFor, createUsuario, TEST_PASSWORD } from './helpers/auth.js';
+import {
+  adminAgent,
+  agentFor,
+  createUsuario,
+  randomPassword,
+  TEST_PASSWORD,
+} from './helpers/auth.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
+
+const NEW_PASSWORD = randomPassword();
+const WRONG_PASSWORD = randomPassword();
 
 describe('Auth y usuarios (e2e)', () => {
   let app: INestApplication<App>;
@@ -45,11 +54,11 @@ describe('Auth y usuarios (e2e)', () => {
 
       const wrongPassword = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
-        .send({ email: 'admin@test.edu', password: 'incorrecta' })
+        .send({ email: 'admin@test.edu', password: WRONG_PASSWORD })
         .expect(401);
       const unknownEmail = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
-        .send({ email: 'nadie@test.edu', password: 'incorrecta' })
+        .send({ email: 'nadie@test.edu', password: WRONG_PASSWORD })
         .expect(401);
 
       expect(wrongPassword.body.message).toBe(unknownEmail.body.message);
@@ -121,7 +130,7 @@ describe('Auth y usuarios (e2e)', () => {
 
       await api
         .post('/api/v1/auth/cambiar-password')
-        .send({ passwordActual: TEST_PASSWORD, passwordNueva: 'Nueva-Password-456' })
+        .send({ passwordActual: TEST_PASSWORD, passwordNueva: NEW_PASSWORD })
         .expect(204);
 
       await request(app.getHttpServer())
@@ -130,7 +139,7 @@ describe('Auth y usuarios (e2e)', () => {
         .expect(401);
       await request(app.getHttpServer())
         .post('/api/v1/auth/login')
-        .send({ email: 'admin@test.edu', password: 'Nueva-Password-456' })
+        .send({ email: 'admin@test.edu', password: NEW_PASSWORD })
         .expect(200);
     });
 
@@ -140,7 +149,7 @@ describe('Auth y usuarios (e2e)', () => {
 
       await api
         .post('/api/v1/auth/cambiar-password')
-        .send({ passwordActual: 'incorrecta', passwordNueva: 'Nueva-Password-456' })
+        .send({ passwordActual: WRONG_PASSWORD, passwordNueva: NEW_PASSWORD })
         .expect(400);
       await api
         .post('/api/v1/auth/cambiar-password')
@@ -160,7 +169,7 @@ describe('Auth y usuarios (e2e)', () => {
         .post('/api/v1/usuarios')
         .send({
           email: 'Juan@Test.edu',
-          password: 'Password-123',
+          password: TEST_PASSWORD,
           rol: 'ESTUDIANTE',
           estudianteId: estudiante.id,
         })
@@ -179,21 +188,21 @@ describe('Auth y usuarios (e2e)', () => {
 
       await api
         .post('/api/v1/usuarios')
-        .send({ email: 'a@test.edu', password: 'Password-123', rol: 'ESTUDIANTE' })
+        .send({ email: 'a@test.edu', password: TEST_PASSWORD, rol: 'ESTUDIANTE' })
         .expect(400);
       await api
         .post('/api/v1/usuarios')
-        .send({ email: 'b@test.edu', password: 'Password-123', rol: 'DOCENTE', docenteId: 9999 })
+        .send({ email: 'b@test.edu', password: TEST_PASSWORD, rol: 'DOCENTE', docenteId: 9999 })
         .expect(404);
       await api
         .post('/api/v1/usuarios')
-        .send({ email: 'c@test.edu', password: 'Password-123', rol: 'ADMIN', docenteId: 1 })
+        .send({ email: 'c@test.edu', password: TEST_PASSWORD, rol: 'ADMIN', docenteId: 1 })
         .expect(400);
     });
 
     it('returns 409 for a duplicate email', async () => {
       const api = await adminAgent(app, prisma);
-      const body = { email: 'dup@test.edu', password: 'Password-123', rol: 'ADMIN' };
+      const body = { email: 'dup@test.edu', password: TEST_PASSWORD, rol: 'ADMIN' };
 
       await api.post('/api/v1/usuarios').send(body).expect(201);
       await api.post('/api/v1/usuarios').send(body).expect(409);

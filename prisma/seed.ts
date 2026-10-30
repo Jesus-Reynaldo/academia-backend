@@ -1,11 +1,15 @@
 import { PrismaClient, TipoEvaluacion } from '@prisma/client';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import 'dotenv/config';
+import { randomBytes } from 'node:crypto';
 import { hashPassword } from '../src/auth/password.util.js';
 
 const prisma = new PrismaClient({
   adapter: new PrismaMariaDb(process.env.DATABASE_URL!),
 });
+
+const sinTildes = (texto: string) =>
+  texto.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
 async function main() {
   // Reset in dependency order so the seed is safely re-runnable.
@@ -74,7 +78,7 @@ async function main() {
           nombres,
           apellidos,
           documento: `${10000000 + index}`,
-          email: `${nombres.toLowerCase()}.${apellidos.toLowerCase()}@colegio.edu`,
+          email: `${sinTildes(nombres)}.${sinTildes(apellidos)}@colegio.edu`,
           estado: 'ACTIVO',
         },
       }),
@@ -113,7 +117,8 @@ async function main() {
   }
 
   // Development accounts: one per role, all sharing the seed password.
-  const seedPassword = process.env.SEED_ADMIN_PASSWORD || 'Cambiar-123456';
+  const configuredPassword = process.env.SEED_ADMIN_PASSWORD;
+  const seedPassword = configuredPassword || randomBytes(9).toString('base64url');
   const passwordHash = await hashPassword(seedPassword);
   const adminEmail = (process.env.SEED_ADMIN_EMAIL || 'admin@colegio.edu').toLowerCase();
   await prisma.usuario.createMany({
@@ -128,8 +133,11 @@ async function main() {
       },
     ],
   });
-  if (!process.env.SEED_ADMIN_PASSWORD) {
-    console.warn('SEED_ADMIN_PASSWORD no definido: se usó la contraseña de desarrollo por defecto.');
+  if (configuredPassword) {
+    console.log('Cuentas de desarrollo creadas con la contraseña de SEED_ADMIN_PASSWORD.');
+  } else {
+    // Shown once: it is not stored anywhere in plain text.
+    console.log(`SEED_ADMIN_PASSWORD no definido. Contraseña generada para las cuentas: ${seedPassword}`);
   }
 
   console.log('Seed completado:', {

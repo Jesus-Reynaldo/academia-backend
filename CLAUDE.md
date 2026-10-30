@@ -26,7 +26,7 @@ Single test: `npx vitest run src/inscripcion/inscripcion.service.spec.ts`. For e
 
 API is served under `/api/v1`; Swagger UI at `/api/docs` (use *Authorize* with the login `accessToken`).
 
-Required env (see `.env.example`): `DATABASE_URL`, `JWT_SECRET` (the app refuses to boot without it), optional `JWT_EXPIRES_IN_SECONDS`, `NOTA_APROBACION`, `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`. `.env` and `.env.test` are gitignored. `prisma:seed` wipes the DB and creates one account per role (admin, docente, estudiante) sharing the seed password.
+Required env (see `.env.example`): `DATABASE_URL`, `JWT_SECRET` (the app refuses to boot without it), optional `JWT_EXPIRES_IN_SECONDS`, `NOTA_APROBACION`, `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`. `.env` and `.env.test` are gitignored. `prisma:seed` wipes the DB and creates one account per role (admin, docente, estudiante) sharing one password: `SEED_ADMIN_PASSWORD`, or a random one printed once to the console when unset. No password literals belong in the repo (a secret scanner flags them); tests generate theirs via `randomPassword()` in `test/helpers/auth.ts`. `README.md` is the student-facing setup guide (MySQL install options, `.env`, migrate, seed, run).
 
 Prisma 7 notes: `migrate dev` does not regenerate the client — run `npm run prisma:generate` after schema changes. `migrate reset` has no `--skip-seed`/`--skip-generate` anymore, and when run by an AI agent Prisma refuses unless the user explicitly consents via `PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION` — `test:e2e` triggers a reset, so ask the user first.
 
