@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { paginate } from '../common/pagination.util.js';
+import { CALIFICACION_INCLUDE } from '../calificacion/calificacion.include.js';
 import { removeOrDeactivate } from '../common/soft-delete.util.js';
 import { CreateMateriaDto } from './dto/create-materia.dto.js';
 import { UpdateMateriaDto } from './dto/update-materia.dto.js';
@@ -64,6 +65,7 @@ export class MateriaService {
 
     return paginate(this.prisma.calificacion, {
       where: { materiaId },
+      include: CALIFICACION_INCLUDE,
       orderBy: { id: query.order ?? 'asc' },
       page: query.page,
       limit: query.limit,

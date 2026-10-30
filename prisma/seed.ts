@@ -1,6 +1,7 @@
 import { PrismaClient, TipoEvaluacion } from '@prisma/client';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import 'dotenv/config';
+import { hashPassword } from '../src/auth/password.util.js';
 
 const prisma = new PrismaClient({
   adapter: new PrismaMariaDb(process.env.DATABASE_URL!),
@@ -8,6 +9,7 @@ const prisma = new PrismaClient({
 
 async function main() {
   // Reset in dependency order so the seed is safely re-runnable.
+  await prisma.usuario.deleteMany();
   await prisma.calificacion.deleteMany();
   await prisma.inscripcion.deleteMany();
   await prisma.estudiante.deleteMany();
@@ -110,7 +112,28 @@ async function main() {
     }
   }
 
+  // Development accounts: one per role, all sharing the seed password.
+  const seedPassword = process.env.SEED_ADMIN_PASSWORD || 'Cambiar-123456';
+  const passwordHash = await hashPassword(seedPassword);
+  const adminEmail = (process.env.SEED_ADMIN_EMAIL || 'admin@colegio.edu').toLowerCase();
+  await prisma.usuario.createMany({
+    data: [
+      { email: adminEmail, passwordHash, rol: 'ADMIN' },
+      { email: docentes[0]!.email!, passwordHash, rol: 'DOCENTE', docenteId: docentes[0]!.id },
+      {
+        email: estudiantes[0]!.email!,
+        passwordHash,
+        rol: 'ESTUDIANTE',
+        estudianteId: estudiantes[0]!.id,
+      },
+    ],
+  });
+  if (!process.env.SEED_ADMIN_PASSWORD) {
+    console.warn('SEED_ADMIN_PASSWORD no definido: se usó la contraseña de desarrollo por defecto.');
+  }
+
   console.log('Seed completado:', {
+    usuarios: [adminEmail, docentes[0]!.email, estudiantes[0]!.email],
     periodo: 1,
     cursos: cursos.length,
     materias: materias.length,

@@ -13,4 +13,9 @@ export class EstudianteQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   nombre?: string;
+
+  @ApiPropertyOptional({ description: 'Busca por nombres, apellidos, código o documento' })
+  @IsOptional()
+  @IsString()
+  q?: string;
 }

@@ -1,13 +1,15 @@
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
+import type request from 'supertest';
 import type { App } from 'supertest/types';
 import { createTestApp } from './helpers/create-test-app.js';
 import { cleanDatabase } from './helpers/clean-db.js';
+import { adminAgent } from './helpers/auth.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 
 describe('Historial académico (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
+  let api: ReturnType<typeof request.agent>;
 
   beforeAll(async () => {
     app = await createTestApp();
@@ -16,6 +18,7 @@ describe('Historial académico (e2e)', () => {
 
   beforeEach(async () => {
     await cleanDatabase(prisma);
+    api = await adminAgent(app, prisma);
   });
 
   afterAll(async () => {
@@ -49,7 +52,7 @@ describe('Historial académico (e2e)', () => {
       data: { inscripcionId: inscripcion.id, materiaId: materia.id, nota: 90, tipo: 'FINAL' },
     });
 
-    const response = await request(app.getHttpServer())
+    const response = await api
       .get(`/api/v1/estudiantes/${estudiante.id}/historial-academico`)
       .expect(200);
 
@@ -74,7 +77,7 @@ describe('Historial académico (e2e)', () => {
   });
 
   it('returns 404 for a non-existent estudiante', async () => {
-    await request(app.getHttpServer())
+    await api
       .get('/api/v1/estudiantes/9999/historial-academico')
       .expect(404);
   });

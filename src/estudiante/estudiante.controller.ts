@@ -18,24 +18,31 @@ import { UpdateEstudianteDto } from './dto/update-estudiante.dto.js';
 import { EstudianteQueryDto } from './dto/estudiante-query.dto.js';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto.js';
 import { sendRemovalResponse } from '../common/remove-response.util.js';
+import { Roles } from '../auth/roles.decorator.js';
+import { CurrentUser } from '../auth/current-user.decorator.js';
+import type { AuthUser } from '../auth/auth.types.js';
+import { assertEstudianteAccess } from '../auth/access.util.js';
 
 @ApiTags('Estudiantes')
 @Controller('estudiantes')
 export class EstudianteController {
   constructor(private readonly service: EstudianteService) {}
 
+  @Roles('ADMIN')
   @Post()
   create(@Body() dto: CreateEstudianteDto) {
     return this.service.create(dto);
   }
 
+  @Roles('ADMIN', 'DOCENTE')
   @Get()
   findAll(@Query() query: EstudianteQueryDto) {
     return this.service.findAll(query);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthUser) {
+    assertEstudianteAccess(user, id);
     return this.service.findOne(id);
   }
 
@@ -43,7 +50,9 @@ export class EstudianteController {
   findInscripciones(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: PaginationQueryDto,
+    @CurrentUser() user: AuthUser,
   ) {
+    assertEstudianteAccess(user, id);
     return this.service.findInscripciones(id, query);
   }
 
@@ -51,15 +60,19 @@ export class EstudianteController {
   findCalificaciones(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: PaginationQueryDto,
+    @CurrentUser() user: AuthUser,
   ) {
+    assertEstudianteAccess(user, id);
     return this.service.findCalificaciones(id, query);
   }
 
   @Get(':id/historial-academico')
-  getHistorialAcademico(@Param('id', ParseIntPipe) id: number) {
+  getHistorialAcademico(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthUser) {
+    assertEstudianteAccess(user, id);
     return this.service.getHistorialAcademico(id);
   }
 
+  @Roles('ADMIN')
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -68,6 +81,7 @@ export class EstudianteController {
     return this.service.update(id, dto);
   }
 
+  @Roles('ADMIN')
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
     const outcome = await this.service.remove(id);

@@ -29,6 +29,8 @@ async function bootstrap() {
     .setTitle('Sistema Académico API')
     .setDescription('API REST para la gestión académica de estudiantes')
     .setVersion('1.0')
+    .addBearerAuth()
+    .addSecurityRequirements('bearer')
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);

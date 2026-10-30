@@ -7,11 +7,12 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { paginate } from '../common/pagination.util.js';
+import { CALIFICACION_INCLUDE } from './calificacion.include.js';
 import { CreateCalificacionDto, NOTA_MAX, NOTA_MIN } from './dto/create-calificacion.dto.js';
 import { UpdateCalificacionDto } from './dto/update-calificacion.dto.js';
 import { CalificacionQueryDto } from './dto/calificacion-query.dto.js';
 
-const SORTABLE_FIELDS = new Set(['id', 'nota', 'tipo', 'fecha']);
+const SORTABLE_FIELDS = new Set(['id', 'nota', 'tipo', 'fecha', 'createdAt']);
 
 @Injectable()
 export class CalificacionService {
@@ -71,6 +72,23 @@ export class CalificacionService {
       docenteId: query.docenteId,
       inscripcionId: query.inscripcionId,
       tipo: query.tipo,
+      inscripcion:
+        query.estudianteId != null ||
+        query.periodoAcademicoId != null ||
+        query.cursoId != null
+          ? {
+              estudianteId: query.estudianteId,
+              periodoAcademicoId: query.periodoAcademicoId,
+              cursoId: query.cursoId,
+            }
+          : undefined,
+      fecha:
+        query.fechaDesde || query.fechaHasta
+          ? {
+              gte: query.fechaDesde ? new Date(query.fechaDesde) : undefined,
+              lte: query.fechaHasta ? new Date(query.fechaHasta) : undefined,
+            }
+          : undefined,
     };
 
     const sortBy = query.sortBy && SORTABLE_FIELDS.has(query.sortBy) ? query.sortBy : 'id';
@@ -78,13 +96,17 @@ export class CalificacionService {
     return paginate(this.prisma.calificacion, {
       where,
       orderBy: { [sortBy]: query.order ?? 'asc' },
+      include: CALIFICACION_INCLUDE,
       page: query.page,
       limit: query.limit,
     });
   }
 
   async findOne(id: number) {
-    const calificacion = await this.prisma.calificacion.findUnique({ where: { id } });
+    const calificacion = await this.prisma.calificacion.findUnique({
+      where: { id },
+      include: CALIFICACION_INCLUDE,
+    });
     if (!calificacion) {
       throw new NotFoundException('Calificación no encontrada');
     }

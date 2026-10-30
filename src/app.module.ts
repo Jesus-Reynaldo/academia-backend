@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { createObserveModule } from '@nestjs/observe';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
@@ -11,6 +13,9 @@ import { DocenteModule } from './docente/docente.module.js';
 import { EstudianteModule } from './estudiante/estudiante.module.js';
 import { InscripcionModule } from './inscripcion/inscripcion.module.js';
 import { CalificacionModule } from './calificacion/calificacion.module.js';
+import { AuthModule } from './auth/auth.module.js';
+import { UsuarioModule } from './usuario/usuario.module.js';
+import { DashboardModule } from './dashboard/dashboard.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -24,7 +29,15 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       appSecret: 'YOUR_APP_SECRET',
       serviceId: 'backend-notas',
     }),
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60_000, limit: 300 }],
+      // The e2e suite hammers the API from a single address.
+      skipIf: () => process.env.NODE_ENV === 'test',
+    }),
     PrismaModule,
+    AuthModule,
+    UsuarioModule,
+    DashboardModule,
     PeriodoAcademicoModule,
     CursoModule,
     MateriaModule,
@@ -34,6 +47,6 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     CalificacionModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

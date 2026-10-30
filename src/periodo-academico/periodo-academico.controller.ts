@@ -16,12 +16,14 @@ import { PeriodoAcademicoService } from './periodo-academico.service.js';
 import { CreatePeriodoAcademicoDto } from './dto/create-periodo-academico.dto.js';
 import { UpdatePeriodoAcademicoDto } from './dto/update-periodo-academico.dto.js';
 import { PeriodoAcademicoQueryDto } from './dto/periodo-academico-query.dto.js';
+import { Roles } from '../auth/roles.decorator.js';
 
 @ApiTags('Periodos Academicos')
 @Controller('periodos-academicos')
 export class PeriodoAcademicoController {
   constructor(private readonly service: PeriodoAcademicoService) {}
 
+  @Roles('ADMIN')
   @Post()
   create(@Body() dto: CreatePeriodoAcademicoDto) {
     return this.service.create(dto);
@@ -37,6 +39,7 @@ export class PeriodoAcademicoController {
     return this.service.findOne(id);
   }
 
+  @Roles('ADMIN')
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -45,6 +48,7 @@ export class PeriodoAcademicoController {
     return this.service.update(id, dto);
   }
 
+  @Roles('ADMIN')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number) {
