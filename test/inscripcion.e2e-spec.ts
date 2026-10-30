@@ -1,13 +1,15 @@
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
+import type request from 'supertest';
 import type { App } from 'supertest/types';
 import { createTestApp } from './helpers/create-test-app.js';
 import { cleanDatabase } from './helpers/clean-db.js';
+import { adminAgent } from './helpers/auth.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 
 describe('Inscripciones (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
+  let api: ReturnType<typeof request.agent>;
 
   beforeAll(async () => {
     app = await createTestApp();
@@ -16,6 +18,7 @@ describe('Inscripciones (e2e)', () => {
 
   beforeEach(async () => {
     await cleanDatabase(prisma);
+    api = await adminAgent(app, prisma);
   });
 
   afterAll(async () => {
@@ -59,7 +62,7 @@ describe('Inscripciones (e2e)', () => {
   it('POST /api/v1/inscripciones creates an inscripcion', async () => {
     const { estudiante, curso, periodo } = await crearFixtures();
 
-    const response = await request(app.getHttpServer())
+    const response = await api
       .post('/api/v1/inscripciones')
       .send({
         estudianteId: estudiante.id,
@@ -74,7 +77,7 @@ describe('Inscripciones (e2e)', () => {
   it('rejects an inexistent estudiante with 404', async () => {
     const { curso, periodo } = await crearFixtures();
 
-    await request(app.getHttpServer())
+    await api
       .post('/api/v1/inscripciones')
       .send({ estudianteId: 9999, cursoId: curso.id, periodoAcademicoId: periodo.id })
       .expect(404);
@@ -83,7 +86,7 @@ describe('Inscripciones (e2e)', () => {
   it('rejects an inexistent curso with 404', async () => {
     const { estudiante, periodo } = await crearFixtures();
 
-    await request(app.getHttpServer())
+    await api
       .post('/api/v1/inscripciones')
       .send({ estudianteId: estudiante.id, cursoId: 9999, periodoAcademicoId: periodo.id })
       .expect(404);
@@ -94,7 +97,7 @@ describe('Inscripciones (e2e)', () => {
       estudianteEstado: 'INACTIVO',
     });
 
-    await request(app.getHttpServer())
+    await api
       .post('/api/v1/inscripciones')
       .send({ estudianteId: estudiante.id, cursoId: curso.id, periodoAcademicoId: periodo.id })
       .expect(400);
@@ -103,7 +106,7 @@ describe('Inscripciones (e2e)', () => {
   it('rejects an inactive curso with 400', async () => {
     const { estudiante, curso, periodo } = await crearFixtures({ cursoEstado: 'INACTIVO' });
 
-    await request(app.getHttpServer())
+    await api
       .post('/api/v1/inscripciones')
       .send({ estudianteId: estudiante.id, cursoId: curso.id, periodoAcademicoId: periodo.id })
       .expect(400);
@@ -117,8 +120,8 @@ describe('Inscripciones (e2e)', () => {
       periodoAcademicoId: periodo.id,
     };
 
-    await request(app.getHttpServer()).post('/api/v1/inscripciones').send(payload).expect(201);
-    await request(app.getHttpServer()).post('/api/v1/inscripciones').send(payload).expect(409);
+    await api.post('/api/v1/inscripciones').send(payload).expect(201);
+    await api.post('/api/v1/inscripciones').send(payload).expect(409);
   });
 
   it('rejects an inscripcion when the curso is full with 409', async () => {
@@ -127,7 +130,7 @@ describe('Inscripciones (e2e)', () => {
       data: { codigo: 'EST-0002', nombres: 'Ana', apellidos: 'López', documento: '87654321' },
     });
 
-    await request(app.getHttpServer())
+    await api
       .post('/api/v1/inscripciones')
       .send({
         estudianteId: estudiante.id,
@@ -136,7 +139,7 @@ describe('Inscripciones (e2e)', () => {
       })
       .expect(201);
 
-    await request(app.getHttpServer())
+    await api
       .post('/api/v1/inscripciones')
       .send({ estudianteId: otroEstudiante.id, cursoId: curso.id, periodoAcademicoId: periodo.id })
       .expect(409);

@@ -1,6 +1,7 @@
 import type { PrismaService } from '../../src/prisma/prisma.service.js';
 
 export async function cleanDatabase(prisma: PrismaService) {
+  await prisma.usuario.deleteMany();
   await prisma.calificacion.deleteMany();
   await prisma.inscripcion.deleteMany();
   await prisma.estudiante.deleteMany();

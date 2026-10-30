@@ -11,7 +11,13 @@ import { CreateInscripcionDto } from './dto/create-inscripcion.dto.js';
 import { UpdateInscripcionDto } from './dto/update-inscripcion.dto.js';
 import { InscripcionQueryDto } from './dto/inscripcion-query.dto.js';
 
-const SORTABLE_FIELDS = new Set(['id', 'fechaInscripcion', 'estado']);
+const SORTABLE_FIELDS = new Set(['id', 'fechaInscripcion', 'estado', 'createdAt']);
+
+const INSCRIPCION_INCLUDE = {
+  estudiante: true,
+  curso: true,
+  periodoAcademico: true,
+} satisfies Prisma.InscripcionInclude;
 const PRISMA_UNIQUE_CONSTRAINT = 'P2002';
 
 @Injectable()
@@ -114,13 +120,17 @@ export class InscripcionService {
     return paginate(this.prisma.inscripcion, {
       where,
       orderBy: { [sortBy]: query.order ?? 'asc' },
+      include: INSCRIPCION_INCLUDE,
       page: query.page,
       limit: query.limit,
     });
   }
 
   async findOne(id: number) {
-    const inscripcion = await this.prisma.inscripcion.findUnique({ where: { id } });
+    const inscripcion = await this.prisma.inscripcion.findUnique({
+      where: { id },
+      include: INSCRIPCION_INCLUDE,
+    });
     if (!inscripcion) {
       throw new NotFoundException('Inscripción no encontrada');
     }

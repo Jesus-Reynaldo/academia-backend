@@ -8,7 +8,22 @@ import { UpdateCursoDto } from './dto/update-curso.dto.js';
 import { CursoQueryDto } from './dto/curso-query.dto.js';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto.js';
 
-const SORTABLE_FIELDS = new Set(['id', 'nombre', 'nivel', 'capacidad', 'estado']);
+const SORTABLE_FIELDS = new Set(['id', 'nombre', 'nivel', 'paralelo', 'capacidad', 'estado', 'createdAt']);
+
+// Occupancy is measured against the running period, where `capacidad` applies.
+const INSCRITOS_ACTIVOS = {
+  _count: {
+    select: {
+      inscripciones: { where: { estado: 'ACTIVA', periodoAcademico: { estado: 'ACTIVO' } } },
+    },
+  },
+} satisfies Prisma.CursoInclude;
+
+type CursoConConteo = Prisma.CursoGetPayload<{ include: typeof INSCRITOS_ACTIVOS }>;
+
+function withInscritosActivos({ _count, ...curso }: CursoConConteo) {
+  return { ...curso, inscritosActivos: _count.inscripciones };
+}
 
 @Injectable()
 export class CursoService {
@@ -27,29 +42,35 @@ export class CursoService {
 
     const sortBy = query.sortBy && SORTABLE_FIELDS.has(query.sortBy) ? query.sortBy : 'id';
 
-    return paginate(this.prisma.curso, {
+    const result = await paginate(this.prisma.curso, {
       where,
       orderBy: { [sortBy]: query.order ?? 'asc' },
+      include: INSCRITOS_ACTIVOS,
       page: query.page,
       limit: query.limit,
     });
+    // `paginate` is generic over the delegate and does not carry the `include` into its type.
+    return { ...result, data: (result.data as CursoConConteo[]).map(withInscritosActivos) };
   }
 
   async findOne(id: number) {
-    const curso = await this.prisma.curso.findUnique({ where: { id } });
+    const curso = await this.prisma.curso.findUnique({
+      where: { id },
+      include: INSCRITOS_ACTIVOS,
+    });
     if (!curso) {
       throw new NotFoundException('Curso no encontrado');
     }
-    return curso;
+    return withInscritosActivos(curso);
   }
 
   async update(id: number, dto: UpdateCursoDto) {
-    await this.findOne(id);
+    await this.assertExists(id);
     return this.prisma.curso.update({ where: { id }, data: dto });
   }
 
   async remove(id: number) {
-    await this.findOne(id);
+    await this.assertExists(id);
 
     return removeOrDeactivate({
       hasDependents: async () =>
@@ -61,7 +82,7 @@ export class CursoService {
   }
 
   async findEstudiantes(cursoId: number, query: PaginationQueryDto) {
-    await this.findOne(cursoId);
+    await this.assertExists(cursoId);
 
     const page = query.page && query.page > 0 ? query.page : 1;
     const limit = query.limit && query.limit > 0 ? query.limit : 20;
@@ -85,7 +106,7 @@ export class CursoService {
   }
 
   async findMaterias(cursoId: number, query: PaginationQueryDto) {
-    await this.findOne(cursoId);
+    await this.assertExists(cursoId);
 
     const where: Prisma.MateriaWhereInput = {
       calificaciones: { some: { inscripcion: { cursoId } } },
@@ -97,5 +118,12 @@ export class CursoService {
       page: query.page,
       limit: query.limit,
     });
+  }
+
+  private async assertExists(id: number) {
+    const curso = await this.prisma.curso.findUnique({ where: { id } });
+    if (!curso) {
+      throw new NotFoundException('Curso no encontrado');
+    }
   }
 }

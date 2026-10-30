@@ -2,14 +2,24 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { paginate } from '../common/pagination.util.js';
+import { CALIFICACION_INCLUDE } from '../calificacion/calificacion.include.js';
 import { removeOrDeactivate } from '../common/soft-delete.util.js';
-import { groupBy } from '../common/array.util.js';
+import { groupBy, promedio } from '../common/array.util.js';
 import { CreateEstudianteDto } from './dto/create-estudiante.dto.js';
 import { UpdateEstudianteDto } from './dto/update-estudiante.dto.js';
 import { EstudianteQueryDto } from './dto/estudiante-query.dto.js';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto.js';
 
-const SORTABLE_FIELDS = new Set(['id', 'codigo', 'nombres', 'apellidos', 'estado']);
+const SORTABLE_FIELDS = new Set([
+  'id',
+  'codigo',
+  'nombres',
+  'apellidos',
+  'documento',
+  'email',
+  'estado',
+  'createdAt',
+]);
 
 @Injectable()
 export class EstudianteService {
@@ -25,12 +35,16 @@ export class EstudianteService {
   }
 
   async findAll(query: EstudianteQueryDto) {
+    const search = query.q ?? query.nombre;
     const where: Prisma.EstudianteWhereInput = {
       estado: query.estado,
-      OR: query.nombre
+      OR: search
         ? [
-            { nombres: { contains: query.nombre } },
-            { apellidos: { contains: query.nombre } },
+            { nombres: { contains: search } },
+            { apellidos: { contains: search } },
+            ...(query.q
+              ? [{ codigo: { contains: search } }, { documento: { contains: search } }]
+              : []),
           ]
         : undefined,
     };
@@ -92,6 +106,7 @@ export class EstudianteService {
 
     return paginate(this.prisma.calificacion, {
       where: { inscripcion: { estudianteId } },
+      include: CALIFICACION_INCLUDE,
       orderBy: { id: query.order ?? 'asc' },
       page: query.page,
       limit: query.limit,
@@ -116,23 +131,33 @@ export class EstudianteService {
       throw new NotFoundException('Estudiante no encontrado');
     }
 
+    const todas = estudiante.inscripciones.flatMap((inscripcion) =>
+      inscripcion.calificaciones.map((calificacion) => calificacion.nota),
+    );
+
     return {
       estudiante: {
         id: estudiante.id,
         codigo: estudiante.codigo,
         nombre: `${estudiante.nombres} ${estudiante.apellidos}`,
       },
+      promedioGeneral: promedio(todas),
       periodos: estudiante.inscripciones.map((inscripcion) => {
         const porMateria = groupBy(
           inscripcion.calificaciones,
-          (calificacion) => calificacion.materia.nombre,
+          (calificacion) => calificacion.materia.id,
         );
 
         return {
+          periodoId: inscripcion.periodoAcademico.id,
           periodo: inscripcion.periodoAcademico.nombre,
+          cursoId: inscripcion.curso.id,
           curso: inscripcion.curso.nombre,
-          materias: [...porMateria.entries()].map(([materia, calificaciones]) => ({
-            materia,
+          promedio: promedio(inscripcion.calificaciones.map((calificacion) => calificacion.nota)),
+          materias: [...porMateria.values()].map((calificaciones) => ({
+            materiaId: calificaciones[0]!.materia.id,
+            materia: calificaciones[0]!.materia.nombre,
+            promedio: promedio(calificaciones.map((calificacion) => calificacion.nota)),
             calificaciones: calificaciones.map((calificacion) => ({
               tipo: calificacion.tipo,
               nota: calificacion.nota,

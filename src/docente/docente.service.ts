@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { paginate } from '../common/pagination.util.js';
+import { CALIFICACION_INCLUDE } from '../calificacion/calificacion.include.js';
 import { removeOrDeactivate } from '../common/soft-delete.util.js';
 import { CreateDocenteDto } from './dto/create-docente.dto.js';
 import { UpdateDocenteDto } from './dto/update-docente.dto.js';
@@ -69,6 +70,7 @@ export class DocenteService {
 
     return paginate(this.prisma.calificacion, {
       where: { docenteId },
+      include: CALIFICACION_INCLUDE,
       orderBy: { id: query.order ?? 'asc' },
       page: query.page,
       limit: query.limit,

@@ -40,6 +40,12 @@ enum EstadoInscripcion {
   FINALIZADA
 }
 
+enum RolUsuario {
+  ADMIN
+  DOCENTE
+  ESTUDIANTE
+}
+
 enum TipoEvaluacion {
   PARCIAL
   FINAL
@@ -64,6 +70,7 @@ model Estudiante {
   updatedAt       DateTime         @updatedAt
 
   inscripciones Inscripcion[]
+  usuario       Usuario?
 
   @@map("estudiantes")
 }
@@ -80,6 +87,7 @@ model Docente {
   updatedAt  DateTime      @updatedAt
 
   calificaciones Calificacion[]
+  usuario        Usuario?
 
   @@map("docentes")
 }
@@ -164,4 +172,21 @@ model Calificacion {
   docente     Docente?    @relation(fields: [docenteId], references: [id])
 
   @@map("calificaciones")
+}
+
+model Usuario {
+  id           Int        @id @default(autoincrement())
+  email        String     @unique
+  passwordHash String
+  rol          RolUsuario
+  activo       Boolean    @default(true)
+  estudianteId Int?       @unique
+  docenteId    Int?       @unique
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  estudiante Estudiante? @relation(fields: [estudianteId], references: [id])
+  docente    Docente?    @relation(fields: [docenteId], references: [id])
+
+  @@map("usuarios")
 }

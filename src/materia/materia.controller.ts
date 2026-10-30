@@ -18,12 +18,14 @@ import { UpdateMateriaDto } from './dto/update-materia.dto.js';
 import { MateriaQueryDto } from './dto/materia-query.dto.js';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto.js';
 import { sendRemovalResponse } from '../common/remove-response.util.js';
+import { Roles } from '../auth/roles.decorator.js';
 
 @ApiTags('Materias')
 @Controller('materias')
 export class MateriaController {
   constructor(private readonly service: MateriaService) {}
 
+  @Roles('ADMIN')
   @Post()
   create(@Body() dto: CreateMateriaDto) {
     return this.service.create(dto);
@@ -39,6 +41,7 @@ export class MateriaController {
     return this.service.findOne(id);
   }
 
+  @Roles('ADMIN', 'DOCENTE')
   @Get(':id/calificaciones')
   findCalificaciones(
     @Param('id', ParseIntPipe) id: number,
@@ -47,11 +50,13 @@ export class MateriaController {
     return this.service.findCalificaciones(id, query);
   }
 
+  @Roles('ADMIN')
   @Patch(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateMateriaDto) {
     return this.service.update(id, dto);
   }
 
+  @Roles('ADMIN')
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
     const outcome = await this.service.remove(id);

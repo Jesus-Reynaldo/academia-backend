@@ -1,13 +1,15 @@
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
+import type request from 'supertest';
 import type { App } from 'supertest/types';
 import { createTestApp } from './helpers/create-test-app.js';
 import { cleanDatabase } from './helpers/clean-db.js';
+import { adminAgent } from './helpers/auth.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 
 describe('Calificaciones (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
+  let api: ReturnType<typeof request.agent>;
 
   beforeAll(async () => {
     app = await createTestApp();
@@ -16,6 +18,7 @@ describe('Calificaciones (e2e)', () => {
 
   beforeEach(async () => {
     await cleanDatabase(prisma);
+    api = await adminAgent(app, prisma);
   });
 
   afterAll(async () => {
@@ -48,7 +51,7 @@ describe('Calificaciones (e2e)', () => {
   it('POST /api/v1/calificaciones registers a calificacion', async () => {
     const { inscripcion, materia } = await crearInscripcion();
 
-    const response = await request(app.getHttpServer())
+    const response = await api
       .post('/api/v1/calificaciones')
       .send({
         inscripcionId: inscripcion.id,
@@ -64,7 +67,7 @@ describe('Calificaciones (e2e)', () => {
   it('rejects a nota out of range with 400', async () => {
     const { inscripcion, materia } = await crearInscripcion();
 
-    await request(app.getHttpServer())
+    await api
       .post('/api/v1/calificaciones')
       .send({ inscripcionId: inscripcion.id, materiaId: materia.id, nota: 150, tipo: 'PARCIAL' })
       .expect(400);
@@ -73,7 +76,7 @@ describe('Calificaciones (e2e)', () => {
   it('rejects an inexistent inscripcion with 404', async () => {
     const { materia } = await crearInscripcion();
 
-    await request(app.getHttpServer())
+    await api
       .post('/api/v1/calificaciones')
       .send({ inscripcionId: 9999, materiaId: materia.id, nota: 85, tipo: 'PARCIAL' })
       .expect(404);
@@ -82,7 +85,7 @@ describe('Calificaciones (e2e)', () => {
   it('rejects an inexistent materia with 404', async () => {
     const { inscripcion } = await crearInscripcion();
 
-    await request(app.getHttpServer())
+    await api
       .post('/api/v1/calificaciones')
       .send({ inscripcionId: inscripcion.id, materiaId: 9999, nota: 85, tipo: 'PARCIAL' })
       .expect(404);

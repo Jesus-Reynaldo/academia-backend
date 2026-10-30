@@ -7,7 +7,7 @@ const rootDir = path.resolve(__dirname, '..');
 
 export default async function setup() {
   // Recreate the schema from scratch on the MySQL test database (DATABASE_URL from .env.test).
-  execSync('npx prisma migrate reset --force --skip-seed --skip-generate', {
+  execSync('npx prisma migrate reset --force', {
     cwd: rootDir,
     stdio: 'inherit',
   });
