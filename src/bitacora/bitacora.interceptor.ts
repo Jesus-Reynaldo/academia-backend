@@ -1,9 +1,19 @@
-import { Injectable, type CallHandler, type ExecutionContext, type NestInterceptor } from '@nestjs/common';
+import {
+  Injectable,
+  type CallHandler,
+  type ExecutionContext,
+  type NestInterceptor,
+} from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { tap, type Observable } from 'rxjs';
 import type { AuthUser } from '../auth/auth.types.js';
 import { BitacoraService } from './bitacora.service.js';
-import { accionBitacora, describirRegistro, rutaBitacora } from './bitacora.util.js';
+import {
+  accionBitacora,
+  describirConfiguracion,
+  describirRegistro,
+  rutaBitacora,
+} from './bitacora.util.js';
 
 /**
  * Registra en la bitácora cada POST/PATCH/PUT/DELETE exitoso sobre los recursos del sistema, con el usuario
@@ -18,19 +28,36 @@ export class BitacoraInterceptor implements NestInterceptor {
     if (context.getType() !== 'http') return next.handle();
     const http = context.switchToHttp();
     const request = http.getRequest<Request & { user?: AuthUser }>();
-    const ruta = rutaBitacora(request.method, request.originalUrl ?? request.url);
+    const ruta = rutaBitacora(
+      request.method,
+      request.originalUrl ?? request.url,
+    );
     if (!ruta) return next.handle();
 
     return next.handle().pipe(
       tap((respuesta: unknown) => {
         const status = http.getResponse<Response>().statusCode;
-        const id = ruta.recursoId ?? ((respuesta as { id?: unknown } | undefined)?.id as number | undefined) ?? null;
+        const id =
+          ruta.recursoId ??
+          ((respuesta as { id?: unknown } | undefined)?.id as
+            number | undefined) ??
+          null;
+        // Configuración: siempre es una modificación (quitar el logo no desactiva nada).
+        const esConfiguracion = ruta.recurso === 'configuracion';
         this.bitacora.registrar({
           usuarioId: request.user?.id ?? null,
-          accion: accionBitacora(request.method, request.body, status),
+          accion: esConfiguracion
+            ? 'MODIFICAR'
+            : accionBitacora(request.method, request.body, status),
           recurso: ruta.recurso,
-          recursoId: typeof id === 'number' ? id : null,
-          descripcion: describirRegistro(respuesta, request.body),
+          recursoId: esConfiguracion
+            ? null
+            : typeof id === 'number'
+              ? id
+              : null,
+          descripcion: esConfiguracion
+            ? describirConfiguracion(request.method, ruta.subruta, respuesta)
+            : describirRegistro(respuesta, request.body),
         });
       }),
     );

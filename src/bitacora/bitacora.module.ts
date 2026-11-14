@@ -6,6 +6,9 @@ import { BitacoraService } from './bitacora.service.js';
 
 @Module({
   controllers: [BitacoraController],
-  providers: [BitacoraService, { provide: APP_INTERCEPTOR, useClass: BitacoraInterceptor }],
+  providers: [
+    BitacoraService,
+    { provide: APP_INTERCEPTOR, useClass: BitacoraInterceptor },
+  ],
 })
 export class BitacoraModule {}

@@ -216,3 +216,16 @@ model Bitacora {
   @@index([usuarioId, fecha])
   @@map("bitacora")
 }
+
+/// Datos de la institución (una sola fila, id = 1): nombre, sigla y logotipo que muestra el sistema.
+model Configuracion {
+  id                Int      @id @default(1)
+  nombreInstitucion String   @db.VarChar(150)
+  sigla             String?  @db.VarChar(20)
+  /// Imagen PNG/JPG/WEBP de hasta 1 MB. Se guarda en la base porque Render gratis no conserva archivos en disco.
+  logo              Bytes?   @db.MediumBlob
+  logoTipo          String?  @db.VarChar(40)
+  updatedAt         DateTime @updatedAt
+
+  @@map("configuracion")
+}

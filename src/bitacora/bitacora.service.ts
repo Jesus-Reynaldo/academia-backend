@@ -24,7 +24,9 @@ export class BitacoraService {
    */
   registrar(datos: NuevoRegistroBitacora): void {
     this.prisma.bitacora.create({ data: datos }).catch((error: unknown) => {
-      this.logger.warn(`No se pudo registrar en la bitácora: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.warn(
+        `No se pudo registrar en la bitácora: ${error instanceof Error ? error.message : String(error)}`,
+      );
     });
   }
 
@@ -33,7 +35,13 @@ export class BitacoraService {
       recurso: query.recurso,
       accion: query.accion,
       usuarioId: query.usuarioId,
-      fecha: query.desde || query.hasta ? { gte: query.desde ? new Date(query.desde) : undefined, lte: query.hasta ? new Date(query.hasta) : undefined } : undefined,
+      fecha:
+        query.desde || query.hasta
+          ? {
+              gte: query.desde ? new Date(query.desde) : undefined,
+              lte: query.hasta ? new Date(query.hasta) : undefined,
+            }
+          : undefined,
     };
     return paginate(this.prisma.bitacora, {
       where,

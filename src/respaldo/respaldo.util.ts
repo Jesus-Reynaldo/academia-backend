@@ -8,6 +8,7 @@ export const VERSION_RESPALDO = 1;
  * Para borrar se recorre al revés.
  */
 export const TABLAS = [
+  'configuracion',
   'periodoAcademico',
   'curso',
   'materia',
@@ -21,6 +22,9 @@ export const TABLAS = [
 
 export type Tabla = (typeof TABLAS)[number];
 
+/** Tablas que un respaldo más antiguo puede no traer: si faltan, al restaurar se dejan como están. */
+export const TABLAS_OPCIONALES: readonly Tabla[] = ['configuracion'];
+
 export interface ArchivoRespaldo {
   version: number;
   aplicacion: 'backend-notas';
@@ -30,8 +34,13 @@ export interface ArchivoRespaldo {
 }
 
 /** Arma el archivo y lo comprime con gzip (un respaldo de ~25 000 notas pesa menos de 1 MB). */
-export function empaquetar(tablas: Record<Tabla, Record<string, unknown>[]>, fecha = new Date()): Buffer {
-  const conteos = Object.fromEntries(TABLAS.map((t) => [t, tablas[t].length])) as Record<Tabla, number>;
+export function empaquetar(
+  tablas: Record<Tabla, Record<string, unknown>[]>,
+  fecha = new Date(),
+): Buffer {
+  const conteos = Object.fromEntries(
+    TABLAS.map((t) => [t, tablas[t].length]),
+  ) as Record<Tabla, number>;
   const archivo: ArchivoRespaldo = {
     version: VERSION_RESPALDO,
     aplicacion: 'backend-notas',
@@ -57,28 +66,43 @@ export class RespaldoInvalidoError extends Error {}
 export function desempaquetar(contenido: Buffer): ArchivoRespaldo {
   let texto: string;
   try {
-    const esGzip = contenido.length > 2 && contenido[0] === 0x1f && contenido[1] === 0x8b;
+    const esGzip =
+      contenido.length > 2 && contenido[0] === 0x1f && contenido[1] === 0x8b;
     texto = (esGzip ? gunzipSync(contenido) : contenido).toString('utf8');
   } catch {
-    throw new RespaldoInvalidoError('El archivo está dañado o no es un respaldo.');
+    throw new RespaldoInvalidoError(
+      'El archivo está dañado o no es un respaldo.',
+    );
   }
   let datos: Partial<ArchivoRespaldo>;
   try {
     datos = JSON.parse(texto) as Partial<ArchivoRespaldo>;
   } catch {
-    throw new RespaldoInvalidoError('El archivo no es un respaldo válido (no es JSON).');
+    throw new RespaldoInvalidoError(
+      'El archivo no es un respaldo válido (no es JSON).',
+    );
   }
   if (datos?.aplicacion !== 'backend-notas') {
-    throw new RespaldoInvalidoError('El archivo no es un respaldo de este sistema.');
+    throw new RespaldoInvalidoError(
+      'El archivo no es un respaldo de este sistema.',
+    );
   }
   if (datos.version !== VERSION_RESPALDO) {
-    throw new RespaldoInvalidoError(`El respaldo es de otra versión (${String(datos.version)}); se esperaba la ${VERSION_RESPALDO}.`);
+    throw new RespaldoInvalidoError(
+      `El respaldo es de otra versión (${String(datos.version)}); se esperaba la ${VERSION_RESPALDO}.`,
+    );
   }
   const tablas = datos.tablas as ArchivoRespaldo['tablas'] | undefined;
   for (const t of TABLAS) {
     const filas = tablas?.[t];
-    if (!Array.isArray(filas)) throw new RespaldoInvalidoError(`Falta la tabla «${t}» en el respaldo.`);
-    if (filas.some((f) => typeof f !== 'object' || f === null || typeof f.id !== 'number')) {
+    if (filas === undefined && TABLAS_OPCIONALES.includes(t)) continue;
+    if (!Array.isArray(filas))
+      throw new RespaldoInvalidoError(`Falta la tabla «${t}» en el respaldo.`);
+    if (
+      filas.some(
+        (f) => typeof f !== 'object' || f === null || typeof f.id !== 'number',
+      )
+    ) {
       throw new RespaldoInvalidoError(`La tabla «${t}» tiene filas sin id.`);
     }
   }

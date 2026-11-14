@@ -1,4 +1,12 @@
-import { BadRequestException, Controller, Get, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Post,
+  Res,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
@@ -39,10 +47,18 @@ export class RespaldoController {
   /** Reemplaza toda la información por la del archivo subido (campo «archivo»). */
   @Post('restaurar')
   @ApiConsumes('multipart/form-data')
-  @ApiBody({ schema: { type: 'object', properties: { archivo: { type: 'string', format: 'binary' } } } })
-  @UseInterceptors(FileInterceptor('archivo', { limits: { fileSize: MAXIMO, files: 1 } }))
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { archivo: { type: 'string', format: 'binary' } },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('archivo', { limits: { fileSize: MAXIMO, files: 1 } }),
+  )
   restaurar(@UploadedFile() archivo: { buffer: Buffer } | undefined) {
-    if (!archivo?.buffer?.length) throw new BadRequestException('Elige un archivo de respaldo.');
+    if (!archivo?.buffer?.length)
+      throw new BadRequestException('Elige un archivo de respaldo.');
     return this.service.restaurar(archivo.buffer);
   }
 }
