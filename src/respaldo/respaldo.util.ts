@@ -51,10 +51,10 @@ export function empaquetar(
   return gzipSync(Buffer.from(JSON.stringify(archivo), 'utf8'));
 }
 
-/** Nombre del archivo: respaldo-academico-2026-11-13-2350.json.gz (hora local del servidor). */
+/** Nombre del archivo: backup-academico-2026-11-13-2350.json.gz (hora local del servidor). */
 export function nombreArchivo(fecha = new Date()): string {
   const d = (n: number) => String(n).padStart(2, '0');
-  return `respaldo-academico-${fecha.getFullYear()}-${d(fecha.getMonth() + 1)}-${d(fecha.getDate())}-${d(fecha.getHours())}${d(fecha.getMinutes())}.json.gz`;
+  return `backup-academico-${fecha.getFullYear()}-${d(fecha.getMonth() + 1)}-${d(fecha.getDate())}-${d(fecha.getHours())}${d(fecha.getMinutes())}.json.gz`;
 }
 
 export class RespaldoInvalidoError extends Error {}

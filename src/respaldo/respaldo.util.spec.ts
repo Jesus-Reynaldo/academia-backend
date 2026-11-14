@@ -85,7 +85,7 @@ describe('respaldo.util', () => {
 
   it('nombra el archivo con fecha y hora', () => {
     expect(nombreArchivo(new Date(2026, 10, 13, 9, 5))).toBe(
-      'respaldo-academico-2026-11-13-0905.json.gz',
+      'backup-academico-2026-11-13-0905.json.gz',
     );
   });
 });
