@@ -16,6 +16,7 @@ import { CalificacionModule } from './calificacion/calificacion.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { UsuarioModule } from './usuario/usuario.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
+import { BitacoraModule } from './bitacora/bitacora.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -45,6 +46,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     EstudianteModule,
     InscripcionModule,
     CalificacionModule,
+    BitacoraModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
