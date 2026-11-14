@@ -187,6 +187,47 @@ model Usuario {
 
   estudiante Estudiante? @relation(fields: [estudianteId], references: [id])
   docente    Docente?    @relation(fields: [docenteId], references: [id])
+  bitacora   Bitacora[]
 
   @@map("usuarios")
+}
+
+enum AccionBitacora {
+  CREAR
+  MODIFICAR
+  DESACTIVAR
+  ELIMINAR
+}
+
+/// Registro de quién creó, modificó, desactivó o eliminó algo (lo escribe BitacoraInterceptor).
+model Bitacora {
+  id          Int            @id @default(autoincrement())
+  fecha       DateTime       @default(now())
+  usuarioId   Int?
+  accion      AccionBitacora
+  recurso     String         @db.VarChar(40)
+  recursoId   Int?
+  descripcion String         @db.VarChar(255)
+
+  usuario Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([fecha])
+  @@index([recurso, fecha])
+  @@index([usuarioId, fecha])
+  @@map("bitacora")
+}
+
+/// Datos de la institución (una sola fila, id = 1): nombre, sigla y logotipo que muestra el sistema.
+model Configuracion {
+  id                Int      @id @default(1)
+  nombreInstitucion String   @db.VarChar(150)
+  sigla             String?  @db.VarChar(20)
+  /// Imagen PNG/JPG/WEBP de hasta 1 MB. Se guarda en la base porque Render gratis no conserva archivos en disco.
+  logo              Bytes?   @db.MediumBlob
+  logoTipo          String?  @db.VarChar(40)
+  /// Despertador: si está encendido, el servidor se visita cada 10 min para que Render y Aiven no se duerman.
+  despertadorActivo Boolean  @default(false)
+  updatedAt         DateTime @updatedAt
+
+  @@map("configuracion")
 }
