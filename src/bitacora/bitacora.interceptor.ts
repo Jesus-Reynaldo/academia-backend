@@ -56,7 +56,12 @@ export class BitacoraInterceptor implements NestInterceptor {
               ? id
               : null,
           descripcion: esConfiguracion
-            ? describirConfiguracion(request.method, ruta.subruta, respuesta)
+            ? describirConfiguracion(
+                request.method,
+                ruta.subruta,
+                respuesta,
+                request.body,
+              )
             : describirRegistro(respuesta, request.body),
         });
       }),

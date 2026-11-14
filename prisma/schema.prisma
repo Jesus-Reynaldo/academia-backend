@@ -225,6 +225,8 @@ model Configuracion {
   /// Imagen PNG/JPG/WEBP de hasta 1 MB. Se guarda en la base porque Render gratis no conserva archivos en disco.
   logo              Bytes?   @db.MediumBlob
   logoTipo          String?  @db.VarChar(40)
+  /// Despertador: si está encendido, el servidor se visita cada 10 min para que Render y Aiven no se duerman.
+  despertadorActivo Boolean  @default(false)
   updatedAt         DateTime @updatedAt
 
   @@map("configuracion")

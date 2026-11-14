@@ -104,12 +104,23 @@ export function describirRegistro(respuesta: unknown, cuerpo: unknown): string {
   return base.slice(0, 255);
 }
 
-/** Cambios de la configuración de la institución: «Logotipo nuevo», «Logotipo quitado» o «Nombre: …». */
+/**
+ * Cambios de la configuración: «Logotipo nuevo», «Logotipo quitado», «Despertador encendido/apagado»
+ * o «Nombre: …».
+ */
 export function describirConfiguracion(
   metodo: string,
   subruta: string | null,
   respuesta: unknown,
+  cuerpo?: unknown,
 ): string {
+  if (subruta === 'despertador') {
+    if (metodo.toUpperCase() === 'POST') return 'Despertador: prueba manual';
+    // Se usa lo que quedó guardado (la respuesta), no lo enviado.
+    return (respuesta as { activo?: unknown } | undefined)?.activo === true
+      ? 'Despertador encendido'
+      : 'Despertador apagado';
+  }
   if (subruta === 'logo')
     return metodo.toUpperCase() === 'DELETE'
       ? 'Logotipo quitado'

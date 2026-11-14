@@ -5,6 +5,7 @@ import {
   Get,
   NotFoundException,
   Patch,
+  Post,
   Put,
   Res,
   UploadedFile,
@@ -16,12 +17,17 @@ import type { Response } from 'express';
 import { Public } from '../auth/public.decorator.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { ConfiguracionService, MAXIMO_LOGO } from './configuracion.service.js';
+import { DespertadorService } from './despertador.service.js';
+import { CambiarDespertadorDto } from './dto/cambiar-despertador.dto.js';
 import { UpdateConfiguracionDto } from './dto/update-configuracion.dto.js';
 
 @ApiTags('Configuración')
 @Controller('configuracion')
 export class ConfiguracionController {
-  constructor(private readonly service: ConfiguracionService) {}
+  constructor(
+    private readonly service: ConfiguracionService,
+    private readonly despertador: DespertadorService,
+  ) {}
 
   /** Nombre, sigla y si hay logotipo. Público: el login lo muestra antes de iniciar sesión. */
   @Public()
@@ -79,5 +85,27 @@ export class ConfiguracionController {
   @Delete('logo')
   quitarLogo() {
     return this.service.quitarLogo();
+  }
+
+  /** Despertador: si está encendido, la URL que visita cada 10 min y la última visita. */
+  @Roles('ADMIN')
+  @Get('despertador')
+  estadoDespertador() {
+    return this.despertador.estado();
+  }
+
+  /** Enciende o apaga el Despertador (al encenderlo hace una visita de prueba al instante). */
+  @Roles('ADMIN')
+  @Patch('despertador')
+  cambiarDespertador(@Body() dto: CambiarDespertadorDto) {
+    return this.despertador.cambiar(dto.activo);
+  }
+
+  /** Hace una visita ahora mismo y devuelve el resultado. */
+  @Roles('ADMIN')
+  @Post('despertador/probar')
+  async probarDespertador() {
+    await this.despertador.visitar();
+    return this.despertador.estado();
   }
 }
